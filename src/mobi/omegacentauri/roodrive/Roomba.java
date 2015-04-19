@@ -22,6 +22,8 @@ public class Roomba extends RemoteDevice {
 
 	@Override
 	public void drive(float x, float y) {
+		if (link == null)
+			return;
 		if (-STRIP_HALF_WIDTH <= x && x <= STRIP_HALF_WIDTH) {
 			drive(y);
 			return;
@@ -70,6 +72,8 @@ public class Roomba extends RemoteDevice {
 
 	@Override
 	public void noDrive() {
+		if (link == null)
+			return;
 		Log.v("Roodrive", "no drive");
 		link.transmit(137, 0, 0, 0, 0);
 	}
@@ -95,8 +99,11 @@ public class Roomba extends RemoteDevice {
 	public void disconnect() {
 		Log.v("Roodrive", "disconnect from Roomba");
 		
-		if (link != null)
-			link.stop();
+		if (link != null) {
+			link.transmit(133);
+			link.stop(); 
+			link = null;
+		}
 	}
 
 	@Override
