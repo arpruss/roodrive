@@ -38,18 +38,31 @@ public class Roomba extends RemoteDevice {
 	
 	private void driveAndRotate(float drive, float rotate) {
 		Log.v("Roodrive", "drive and rotate"+drive+" "+rotate);
-		double speed = Math.sqrt(drive * drive + rotate * rotate);
-		if (speed > 1)
-			speed = 1;
-		int vel;
-		if (drive > 0)
-			vel = (int)(speed * 500);
-		else
-			vel = -(int)(speed * 500);
-		int rotRadius = (int) ((1-Math.abs(rotate)) * 2000);
-		if (rotate > 0)
-			rotRadius = -rotRadius;
-		link.transmit(137, vel >> 8, vel & 0xFF, rotRadius >> 8, rotRadius & 0xFF);
+
+		double outerWheelVelocity = 500 * Math.sqrt(drive * drive + rotate * rotate);
+		if (outerWheelVelocity > 500.)
+			outerWheelVelocity = 500.;
+		double innerWheelVelocity = (1 - 2 * Math.abs(rotate)) * outerWheelVelocity;
+		
+		if (drive < 0) {
+			innerWheelVelocity = -innerWheelVelocity;
+		}
+		
+		int left;
+		int right;
+		
+		if (rotate < 0) {
+			left = (int)innerWheelVelocity;
+			right = (int)outerWheelVelocity;
+		}
+		else {
+			left = (int)outerWheelVelocity;
+			right = (int)innerWheelVelocity;
+		}
+		
+		Log.v("Roodrive", "left = "+left+" right = "+right);
+		
+		link.transmit(145, right >> 8, right & 0xFF, left >> 8, right & 0xFF);
 	}
 
 	private void drive(float y) {
@@ -63,11 +76,14 @@ public class Roomba extends RemoteDevice {
 
 	private void rotate(float x) {
 		Log.v("Roodrive", "rotate "+x);
-		int vel = (int)(x * 500);
+		int vel = (int)(Math.abs(x) * 500);
+
 		if (vel == 0)
 			noDrive();
-		else
-			link.transmit(137, vel >> 8, vel & 0xFF, x < 0 ? 1 : -1);
+		else {
+			int rot = x < 0 ? 1 : -1;
+			link.transmit(137, vel >> 8, vel & 0xFF, rot >> 8, rot & 0xFF);
+		}
 	}
 
 	@Override
@@ -85,6 +101,7 @@ public class Roomba extends RemoteDevice {
 		try {
 			link = new BTDataLink(options.getString(RemoteDevice.PREF_BT_ADDRESS, "(none)"));
 			link.transmit(128, 131);
+			link.transmit(139, 0, 128, 255);
 			return true;
 		}
 		catch (Exception e) {
@@ -97,9 +114,10 @@ public class Roomba extends RemoteDevice {
 
 	@Override
 	public void disconnect() {
-		Log.v("Roodrive", "disconnect from Roomba");
+		Log.v("Roodrive", "disconnect from Roomba");		
 		
 		if (link != null) {
+			link.setOnDisconnectListener(null);
 			link.transmit(133);
 			link.stop(); 
 			link = null;

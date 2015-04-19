@@ -45,8 +45,8 @@ public class RoodriveActivity extends Activity {
 		}
 
 		//devs.get(pos);
-		
-		options.edit().putString(RemoteDevice.PREF_BT_ADDRESS, devs.get(pos).getAddress());
+
+		options.edit().putString(RemoteDevice.PREF_BT_ADDRESS, devs.get(pos).getAddress()).commit();
 		
         Intent i = new Intent(this, RoodriveService.class);
         stopService(i);

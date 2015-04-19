@@ -12,6 +12,7 @@
 	    android:layout_alignParentLeft="true"
 	    android:layout_width="wrap_content"
 	    android:layout_height="wrap_content" 
+        android:textSize="12sp"
 	    android:text="Vacuum"
 	    />
     <Button 
@@ -20,7 +21,8 @@
         android:layout_toRightOf="@id/vacuum"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Disconnect" />
+        android:textSize="12sp"
+        android:text="Off" />
 <!--     <Button 
         android:id="@+id/move"
         android:layout_alignParentBottom="true"

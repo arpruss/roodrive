@@ -29,14 +29,17 @@ public class BTDataLink extends DataLink {
     		if (d.getAddress().equals(address)) {
     			return d;
     		}
+    	Log.v("Roodrive", "cannot find "+address);
     	throw new IOException("Cannot find device "+address);
 	}
 	
 	public BTDataLink(BluetoothDevice dev) throws IOException {
 		for (int i = 0 ; i < 3 ; i++) {
 			try {
-				if (Build.VERSION.SDK_INT >= 10)
+				if (Build.VERSION.SDK_INT >= 10) {
+					Log.v("Roodrive", "insecure BT connect");
 					sock = dev.createInsecureRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
+				}
 				else {
 					Method m;
 					try {
@@ -47,7 +50,9 @@ public class BTDataLink extends DataLink {
 						sock = dev.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
 					}
 				}
+				Log.v("Roodrive", "socket connect start");
 				sock.connect();
+				Log.v("Roodrive", "socket connect done");
 				os = sock.getOutputStream();
 				is = sock.getInputStream();
 				return;

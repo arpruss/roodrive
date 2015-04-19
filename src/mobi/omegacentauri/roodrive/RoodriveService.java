@@ -48,7 +48,45 @@ public class RoodriveService extends Service  {
 	public void onDestroy() {
 		super.onDestroy();
 		
-		roomba.disconnect();
+		if (layout != null) {
+			try {
+				wm.removeView(layout);
+			}
+			catch(Exception e){}
+		}
+
+		Log.v("Roodrive", "onDestroy()");
+
+		if (roomba != null)
+			roomba.disconnect();
+	}
+	
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		super.onStartCommand(intent, flags, startId);
+
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				if (! roomba.connect()) {
+//					Toast.makeText(RoodriveService.this, "Unable to connect", Toast.LENGTH_LONG).show();
+					Log.v("Roodrive", "stopping");
+					RoodriveService.this.stopSelf();
+				}
+//				Toast.makeText(RoodriveService.this, "Connected!", Toast.LENGTH_LONG).show();
+				Log.v("Roodrive", "connected successfully");
+				roomba.setOnDisconnectListener(new DataLink.OnDisconnectListener() {
+					@Override
+					public void disconnected() {
+						stopSelf();
+					}
+				});
+			}
+		}).start();
+		return START_NOT_STICKY;
+		
+		
 	}
 	
 	@Override
@@ -59,17 +97,6 @@ public class RoodriveService extends Service  {
 		options = PreferenceManager.getDefaultSharedPreferences(this);
 		
 		roomba = new Roomba(options);
-		if (! roomba.connect()) {
-			Toast.makeText(this, "Unable to connect", Toast.LENGTH_LONG).show();
-			stopSelf();
-		}
-		roomba.setOnDisconnectListener(new DataLink.OnDisconnectListener() {
-			@Override
-			public void disconnected() {
-				stopSelf();
-			}
-		});
-		
 		wm = (WindowManager)getSystemService(WINDOW_SERVICE);
 		DisplayMetrics dm = new DisplayMetrics();
 		wm.getDefaultDisplay().getMetrics(dm);
