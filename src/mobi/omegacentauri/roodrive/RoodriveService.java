@@ -63,6 +63,12 @@ public class RoodriveService extends Service  {
 			Toast.makeText(this, "Unable to connect", Toast.LENGTH_LONG).show();
 			stopSelf();
 		}
+		roomba.setOnDisconnectListener(new DataLink.OnDisconnectListener() {
+			@Override
+			public void disconnected() {
+				stopSelf();
+			}
+		});
 		
 		wm = (WindowManager)getSystemService(WINDOW_SERVICE);
 		DisplayMetrics dm = new DisplayMetrics();
@@ -151,8 +157,6 @@ public class RoodriveService extends Service  {
 //			}
 //		});
 		
-		
-
 	}
 	
 	protected void viewMove(MotionEvent motion) {

@@ -8,6 +8,7 @@ package mobi.omegacentauri.roodrive;
 
 public abstract class DataLink {
 	 int baud;
+	private mobi.omegacentauri.roodrive.DataLink.OnDisconnectListener onDisconnectListener;
 	
 	 // returns 0 if baud rate is flexible; otherwise, return the baud rate;
 	 public abstract int getFixedBaud();
@@ -31,6 +32,19 @@ public abstract class DataLink {
 	
 	public abstract void stop();
 
+	public void setOnDisconnectListener(OnDisconnectListener listener) {
+		onDisconnectListener = listener;
+	}
+	
+	protected void disconnectedNotify() {
+		if (onDisconnectListener != null)
+			onDisconnectListener.disconnected();
+	}
+
+	abstract static class OnDisconnectListener {
+		abstract public void disconnected();
+	}
+	
 	// quick pre-initialization, possibly at a different baud rate from the main one
 	// The following implementation works for fixed-baud datalinks (assuming baud <= fixed baud).
 	public void preStart(int baud, byte[] data) {

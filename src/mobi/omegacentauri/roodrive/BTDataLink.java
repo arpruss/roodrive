@@ -76,6 +76,8 @@ public class BTDataLink extends DataLink {
 		try {
 			os.write(data);
 		} catch (IOException e) {
+			Log.v("Roodrive", "error "+e);
+			disconnectedNotify();
 		}
 	}
 
