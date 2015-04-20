@@ -5,7 +5,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -69,19 +71,29 @@ public class RoodriveService extends Service  {
 			
 			@Override
 			public void run() {
-				if (! roomba.connect()) {
-//					Toast.makeText(RoodriveService.this, "Unable to connect", Toast.LENGTH_LONG).show();
-					Log.v("Roodrive", "stopping");
-					RoodriveService.this.stopSelf();
-				}
-//				Toast.makeText(RoodriveService.this, "Connected!", Toast.LENGTH_LONG).show();
-				Log.v("Roodrive", "connected successfully");
-				roomba.setOnDisconnectListener(new DataLink.OnDisconnectListener() {
+				final boolean connected = roomba.connect();
+
+				Handler h = new Handler(Looper.getMainLooper());
+				h.post(new Runnable(){
+
 					@Override
-					public void disconnected() {
-						stopSelf();
-					}
-				});
+					public void run() {
+						if (! connected) {
+							Toast.makeText(RoodriveService.this, "Unable to connect", Toast.LENGTH_LONG).show();
+							Log.v("Roodrive", "Unable to connect");
+							RoodriveService.this.stopSelf();
+						}
+//						Toast.makeText(RoodriveService.this, "Connected!", Toast.LENGTH_LONG).show();
+						Log.v("Roodrive", "connected successfully");
+						Toast.makeText(RoodriveService.this, "Connected", Toast.LENGTH_SHORT).show();
+						layout.findViewById(R.id.connecting).setVisibility(View.GONE);
+						roomba.setOnDisconnectListener(new DataLink.OnDisconnectListener() {
+							@Override
+							public void disconnected() {
+								stopSelf();
+							}
+						});
+					}});
 			}
 		}).start();
 		return START_NOT_STICKY;
@@ -188,14 +200,14 @@ public class RoodriveService extends Service  {
 	
 	protected void viewMove(MotionEvent motion) {
 		if (motion.getAction() == MotionEvent.ACTION_DOWN) {
-			moveStartX = motion.getX();
-			moveStartY = motion.getY();
+			moveStartX = motion.getRawX();
+			moveStartY = motion.getRawY();
 			origPosX = lp.x;
 			origPosY = lp.y;
 		}
 		else if (motion.getAction() == MotionEvent.ACTION_MOVE) {
-			float dx = motion.getX() - moveStartX + lp.x - origPosX;
-			float dy = motion.getY() - moveStartY + lp.y - origPosY;
+			float dx = motion.getRawX() - moveStartX;// + lp.x - origPosX;
+			float dy = motion.getRawY() - moveStartY;// + lp.y - origPosY;
 			
 			DisplayMetrics dm = new DisplayMetrics();
 			wm.getDefaultDisplay().getMetrics(dm);
