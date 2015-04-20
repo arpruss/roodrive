@@ -100,13 +100,18 @@ public class Roomba extends RemoteDevice {
 		
 		try {
 			link = new BTDataLink(options.getString(RemoteDevice.PREF_BT_ADDRESS, "(none)"));
-			link.transmit(128, 131);
+			link.transmit(128, 130);
+                        try {
+			    Thread.sleep(50);
+                        } catch(Exception e2){}
 			link.transmit(139, 0, 128, 255);
 			return true;
 		}
 		catch (Exception e) {
-			if (link != null)
-				link.stop();
+			if (link != null) {
+                            link.transmit(133);
+			     link.stop();
+			}
 			return false;
 		}
 		
