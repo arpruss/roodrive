@@ -1,6 +1,14 @@
-                                 Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
+Control pad icon Copyright (C) Guillaume Berry https://thenounproject.com/term/control-pad/40359/
+Four arrows icon Copyright (C) Dmitry Baranovskiy https://thenounproject.com/term/move/5028/
+
+Above icons are licensed under the CC-BY 3.0 license: http://creativecommons.org/licenses/by/3.0/us/
+They were recolored by Alexander Pruss.
+
+Android icons Copyright (C) 2010-14 The Android Open Source Project and/or Google, Inc.
+
+Apache License
+Version 2.0, January 2004
+http://www.apache.org/licenses/
 
    TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
@@ -178,7 +186,7 @@
    APPENDIX: How to apply the Apache License to your work.
 
       To apply the Apache License to your work, attach the following
-      boilerplate notice, with the fields enclosed by brackets "{}"
+      boilerplate notice, with the fields enclosed by brackets "[]"
       replaced with your own identifying information. (Don't include
       the brackets!)  The text should be enclosed in the appropriate
       comment syntax for the file format. We also recommend that a
@@ -186,7 +194,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright {yyyy} {name of copyright owner}
+   Copyright [yyyy] [name of copyright owner]
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -199,4 +207,3 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-

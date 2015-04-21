@@ -13,6 +13,7 @@
 	    android:layout_width="wrap_content"
 	    android:layout_height="26sp"
         android:textSize="12sp"
+        android:alpha="0.2"
 	    android:text="Vacuum"
 	    />
     <Button 
@@ -22,6 +23,7 @@
         android:layout_width="wrap_content"
 	    android:layout_height="26sp"
         android:textSize="12sp"
+        android:alpha="0.2"
         android:text="Off" />
 <!--     <Button 
         android:id="@+id/move"
@@ -32,11 +34,14 @@
         android:text="Move" />  -->
      <ImageView 
          android:id="@+id/move"
-         android:src="@android:drawable/ic_menu_compass"
+         android:src="@drawable/fourarrows"
          android:layout_alignParentTop="true"
          android:layout_alignParentLeft="true"
+        android:alpha="0.2"
          android:layout_width="wrap_content"
-         android:layout_height="wrap_content" />
+         android:layout_height="wrap_content" 
+
+         />
      <TextView 
          android:id="@+id/connecting"
          android:layout_above="@id/vacuum"

@@ -3,6 +3,9 @@ package mobi.omegacentauri.roodrive;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
@@ -11,6 +14,7 @@ import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,8 +33,6 @@ public class RoodriveService extends Service  {
 	private WindowManager wm;
 	private RelativeLayout layout;
 	private WindowManager.LayoutParams lp;
-	private RelativeLayout.LayoutParams fingertipParams;
-	private ImageView fingertip;
 	private float moveStartX;
 	private float moveStartY;
 	private boolean moveMode;
@@ -40,6 +42,9 @@ public class RoodriveService extends Service  {
 	private int origPosY;
 	private Roomba roomba;
 	private boolean vacuum;
+	private View lineView;
+	private float curX;
+	private float curY;
 
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -124,24 +129,19 @@ public class RoodriveService extends Service  {
 		
 		moveMode = false;
 
-		fingertip = new ImageView(this);
-		Drawable d = getResources().getDrawable(android.R.drawable.btn_star);
-		fingertip.setImageDrawable(d);
-		fingertip.setVisibility(View.INVISIBLE);
-		fingertipParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
-		fingertipParams.leftMargin = (lp.width - d.getIntrinsicWidth()) / 2;
-		fingertipParams.topMargin = (lp.height - d.getIntrinsicHeight()) / 2;
-
 		joyCenter = new ImageView(this);
-		d = getResources().getDrawable(android.R.drawable.ic_menu_compass);
+		Drawable d = getResources().getDrawable(R.drawable.controlpad);
 		joyCenter.setImageDrawable(d);
 		joyCenter.setVisibility(View.INVISIBLE);
 		joyCenterParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
 		joyCenterParams.leftMargin = (lp.width - d.getIntrinsicWidth()) / 2;
 		joyCenterParams.topMargin = (lp.height - d.getIntrinsicHeight()) / 2;
 
+		lineView = new LineView();
+		android.widget.RelativeLayout.LayoutParams lineViewParams = new RelativeLayout.LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.FILL_PARENT);
+		
 		layout.addView(joyCenter, joyCenterParams);
-		layout.addView(fingertip, fingertipParams);
+		layout.addView(lineView, lineViewParams);
 
 		final View moveView = layout.findViewById(R.id.move);
 		
@@ -214,14 +214,14 @@ public class RoodriveService extends Service  {
 
 			lp.x = (int)(origPosX + dx);
 			lp.y = (int)(origPosY + dy);
-			if (lp.x < - dm.widthPixels / 2)
-				lp.x = - dm.widthPixels / 2;
-			if (lp.x > dm.widthPixels / 2)
-				lp.x = dm.widthPixels / 2 - 1;
-			if (lp.y < - dm.heightPixels / 2)
-				lp.y = - dm.heightPixels / 2;
-			if (lp.y > dm.heightPixels / 2)
-				lp.y = dm.heightPixels / 2 - 1;
+			if (lp.x < - dm.widthPixels / 2 + lp.width / 2)
+				lp.x = - dm.widthPixels / 2 + lp.width / 2;
+			if (lp.x > dm.widthPixels / 2 - lp.width / 2)
+				lp.x = dm.widthPixels / 2 - 1 - lp.width / 2;
+			if (lp.y < - dm.heightPixels / 2 + lp.height / 2)
+				lp.y = - dm.heightPixels / 2 + lp.height / 2;
+			if (lp.y > dm.heightPixels / 2 - lp.height / 2)
+				lp.y = dm.heightPixels / 2 - 1 - lp.height / 2;
 			
 			wm.updateViewLayout(layout, lp);
 		}
@@ -230,8 +230,8 @@ public class RoodriveService extends Service  {
 	protected void joystickMove(MotionEvent motion) {
 		Log.v("Roodrive", "joystickMove "+motion);
 		if (motion.getAction() == MotionEvent.ACTION_DOWN) {
-			moveStartX = motion.getX();
-			moveStartY = motion.getY();
+			curX = moveStartX = motion.getX();
+			curY = moveStartY = motion.getY();
 		}
 		
 		if (motion.getAction() == MotionEvent.ACTION_DOWN || 
@@ -239,14 +239,9 @@ public class RoodriveService extends Service  {
 
 			float x = (int)motion.getX();
 			float y = (int)motion.getY();
-			if (x < fingertip.getWidth() / 2)
-				x = fingertip.getWidth() / 2;
-			if (x >= layout.getWidth() - fingertip.getWidth() / 2)
-				x = layout.getWidth() - fingertip.getWidth() / 2 - 1;
-			if (y < fingertip.getHeight() / 2)
-				y = fingertip.getHeight() / 2;
-			if (y >= layout.getHeight() - fingertip.getHeight() / 2)
-				y = layout.getHeight() - fingertip.getHeight() / 2 - 1;
+			
+			curX = x;
+			curY = y;
 			
 			if (motion.getAction() == MotionEvent.ACTION_MOVE) {
 				float dx = 2 * (motion.getX() - moveStartX) / layout.getWidth();
@@ -267,17 +262,35 @@ public class RoodriveService extends Service  {
 				joyCenter.setLayoutParams(joyCenterParams);
 				joyCenter.setVisibility(View.VISIBLE);
 			}
-
-			fingertipParams.leftMargin = (int) (x - fingertip.getWidth() / 2);
-			fingertipParams.topMargin = (int) (y - fingertip.getHeight() / 2);
-			fingertip.setLayoutParams(fingertipParams);
-			fingertip.setVisibility(View.VISIBLE);
 		}
 		else if (motion.getAction() == MotionEvent.ACTION_UP) {
 			roomba.noDrive();
 
-			fingertip.setVisibility(View.GONE);
 			joyCenter.setVisibility(View.GONE);
+		}
+		
+		lineView.invalidate();
+	}
+	
+	class LineView extends View {
+		private Paint paint;
+
+		public LineView() {
+			super(RoodriveService.this);
+			paint = new Paint();
+			paint.setColor(Color.WHITE);
+			paint.setStrokeWidth(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics()));
+			paint.setAlpha(204);
+		}
+		
+		@Override
+		protected 
+		void onDraw(Canvas c) {
+			if (!moveMode && joyCenter.getVisibility() == View.VISIBLE) {
+				Log.v("Roodrive", "line "+this.getWidth()+" "+this.getHeight()+" "+ moveStartX+" "+moveStartY+" "+curX+" "+curY);
+				
+				c.drawLine(moveStartX, moveStartY, curX, curY, paint);
+			}
 		}
 	}
 }

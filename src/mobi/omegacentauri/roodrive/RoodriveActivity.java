@@ -1,15 +1,23 @@
 package mobi.omegacentauri.roodrive;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.Html;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -107,4 +115,37 @@ public class RoodriveActivity extends Activity {
 			message.setText("Bluetooth turned off or no devices paired.");
 
     }
+
+    public void onLicense(View v) {
+    	Reader r = null;
+    	StringBuilder s = new StringBuilder();
+    	
+    	try {
+	    	r = new InputStreamReader(getResources().getAssets().open("license.txt"), "UTF-8");
+	    	char[] buf = new char[256];
+	    	int didRead;
+	    	
+	    	while (0 <= (didRead = r.read(buf))) 
+	    		s.append(buf, 0, didRead);
+    	}
+    	catch(Exception e) {
+    		return;
+    	}
+    	finally {
+    		if (r != null)
+    			try {
+    				r.close();
+    			}
+    			catch(Exception e2) {}
+    	}
+    	
+		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+
+		alertDialog.setTitle("Open Source Licenses");
+		alertDialog.setMessage(s.toString());
+		alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+			public void onCancel(DialogInterface dialog) {} });
+		alertDialog.show();		
+	}
+
 }
