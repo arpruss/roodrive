@@ -18,6 +18,7 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.MotionEvent.PointerCoords;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -29,6 +30,9 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 public class RoodriveService extends Service  {
+	private static final String PREF_WINDOW_WIDTH = "joywindow.width";
+	private static final String PREF_WINDOW_X = "joywindow.x";
+	private static final String PREF_WINDOW_Y = "joywindow.y";
 	private SharedPreferences options;
 	private WindowManager wm;
 	private RelativeLayout layout;
@@ -45,6 +49,8 @@ public class RoodriveService extends Service  {
 	private View lineView;
 	private float curX;
 	private float curY;
+	private int origSize;
+	private double origSeparation;
 
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -87,6 +93,7 @@ public class RoodriveService extends Service  {
 							Toast.makeText(RoodriveService.this, "Unable to connect", Toast.LENGTH_LONG).show();
 							Log.v("Roodrive", "Unable to connect");
 							RoodriveService.this.stopSelf();
+							return;
 						}
 //						Toast.makeText(RoodriveService.this, "Connected!", Toast.LENGTH_LONG).show();
 						Log.v("Roodrive", "connected successfully");
@@ -123,6 +130,10 @@ public class RoodriveService extends Service  {
 		lp = new WindowManager.LayoutParams(size/2,size/2, WindowManager.LayoutParams.TYPE_SYSTEM_ERROR, 
 				WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
 				PixelFormat.TRANSLUCENT);
+		lp.x = options.getInt(PREF_WINDOW_X, 0);
+		lp.y = options.getInt(PREF_WINDOW_Y, 0);
+		lp.width = options.getInt(PREF_WINDOW_WIDTH, size/2);
+		adjustWindow();
 		
 		layout = (RelativeLayout)li.inflate(R.layout.joystick, null);
 		wm.addView(layout, lp);
@@ -149,6 +160,7 @@ public class RoodriveService extends Service  {
 
 			@Override
 			public boolean onTouch(View arg0, MotionEvent motion) {
+				Log.v("Roodrive","onTouch "+motion.getAction());
 				if (motion.getAction() == MotionEvent.ACTION_DOWN) {
 					moveMode = moveView.getX() <= motion.getX() && 
 							moveView.getY() <= motion.getY() &&
@@ -160,6 +172,7 @@ public class RoodriveService extends Service  {
 					viewMove(motion);
 				else
 					joystickMove(motion);
+
 				return false;
 			}});
 		
@@ -205,28 +218,85 @@ public class RoodriveService extends Service  {
 			origPosX = lp.x;
 			origPosY = lp.y;
 		}
-		else if (motion.getAction() == MotionEvent.ACTION_MOVE) {
-			float dx = motion.getRawX() - moveStartX;// + lp.x - origPosX;
-			float dy = motion.getRawY() - moveStartY;// + lp.y - origPosY;
-			
-			DisplayMetrics dm = new DisplayMetrics();
-			wm.getDefaultDisplay().getMetrics(dm);
+		else if (motion.getAction() == MotionEvent.ACTION_POINTER_2_DOWN) {
+			origSize = lp.width;
 
-			lp.x = (int)(origPosX + dx);
-			lp.y = (int)(origPosY + dy);
-			if (lp.x < - dm.widthPixels / 2 + lp.width / 2)
-				lp.x = - dm.widthPixels / 2 + lp.width / 2;
-			if (lp.x > dm.widthPixels / 2 - lp.width / 2)
-				lp.x = dm.widthPixels / 2 - 1 - lp.width / 2;
-			if (lp.y < - dm.heightPixels / 2 + lp.height / 2)
-				lp.y = - dm.heightPixels / 2 + lp.height / 2;
-			if (lp.y > dm.heightPixels / 2 - lp.height / 2)
-				lp.y = dm.heightPixels / 2 - 1 - lp.height / 2;
+			PointerCoords coords0 = new PointerCoords();
+			PointerCoords coords1 = new PointerCoords();
+			motion.getPointerCoords(0, coords0);
+			motion.getPointerCoords(1, coords1);
+			
+			double dx = coords1.x - coords0.x;
+			double dy = coords1.y - coords0.y;
+			origSeparation = Math.sqrt(dx*dx + dy*dy);
+			
+			Log.v("Roodrive", "origSize="+origSize+" origSeparation="+origSeparation);
+		}
+		else if (motion.getAction() == MotionEvent.ACTION_MOVE) {
+			if (motion.getPointerCount() > 1) {
+				PointerCoords coords0 = new PointerCoords();
+				PointerCoords coords1 = new PointerCoords();
+				motion.getPointerCoords(0, coords0);
+				motion.getPointerCoords(1, coords1);
+				
+				double dx = coords1.x - coords0.x;
+				double dy = coords1.y - coords0.y;
+
+				double dist = Math.sqrt(dx*dx+dy*dy);
+				
+				Log.v("Roodrive", "dist="+dist);
+
+				if (origSeparation > 10 && dist > 10) {
+					lp.width = (int) (dist / origSeparation * origSize);
+				}
+				
+			}
+			else {
+				float dx = motion.getRawX() - moveStartX;
+				float dy = motion.getRawY() - moveStartY;
+				
+				lp.x = (int)(origPosX + dx);
+				lp.y = (int)(origPosY + dy);
+			}
+
+			adjustWindow();
 			
 			wm.updateViewLayout(layout, lp);
 		}
+		else if (motion.getAction() == MotionEvent.ACTION_UP || motion.getAction() == MotionEvent.ACTION_POINTER_2_UP) {
+			SharedPreferences.Editor ed = options.edit();
+			ed.putInt(PREF_WINDOW_WIDTH, lp.width);
+			ed.putInt(PREF_WINDOW_X, lp.x);
+			ed.putInt(PREF_WINDOW_Y, lp.y);
+			ed.commit();
+		}
 	}
 
+	protected void adjustWindow() {
+		DisplayMetrics dm = new DisplayMetrics();
+		wm.getDefaultDisplay().getMetrics(dm);
+
+		if (lp.width > dm.widthPixels)
+			lp.width = dm.widthPixels;
+		if (lp.width > dm.heightPixels)
+			lp.width = dm.heightPixels;
+		if (lp.width < dm.widthPixels / 6)
+			lp.width = dm.widthPixels / 6;
+		if (lp.width < dm.heightPixels / 6)
+			lp.width = dm.heightPixels / 6;
+
+		lp.height = lp.width;
+
+		if (lp.x < - dm.widthPixels / 2 + lp.width / 2)
+			lp.x = - dm.widthPixels / 2 + lp.width / 2;
+		if (lp.x > dm.widthPixels / 2 - lp.width / 2)
+			lp.x = dm.widthPixels / 2 - 1 - lp.width / 2;
+		if (lp.y < - dm.heightPixels / 2 + lp.height / 2)
+			lp.y = - dm.heightPixels / 2 + lp.height / 2;
+		if (lp.y > dm.heightPixels / 2 - lp.height / 2)
+			lp.y = dm.heightPixels / 2 - 1 - lp.height / 2;
+	}
+	
 	protected void joystickMove(MotionEvent motion) {
 		Log.v("Roodrive", "joystickMove "+motion);
 		if (motion.getAction() == MotionEvent.ACTION_DOWN) {
