@@ -51,6 +51,7 @@ public class RoodriveService extends Service  {
 	private float curY;
 	private int origSize;
 	private double origSeparation;
+	private boolean zoomMode;
 
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -217,8 +218,10 @@ public class RoodriveService extends Service  {
 			moveStartY = motion.getRawY();
 			origPosX = lp.x;
 			origPosY = lp.y;
+			zoomMode = false;
 		}
 		else if (motion.getAction() == MotionEvent.ACTION_POINTER_2_DOWN) {
+			zoomMode = true;
 			origSize = lp.width;
 
 			PointerCoords coords0 = new PointerCoords();
@@ -251,7 +254,8 @@ public class RoodriveService extends Service  {
 				}
 				
 			}
-			else {
+			else if (! zoomMode) {
+				
 				float dx = motion.getRawX() - moveStartX;
 				float dy = motion.getRawY() - moveStartY;
 				
