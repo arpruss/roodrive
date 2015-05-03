@@ -16,4 +16,7 @@ abstract public class RemoteDevice {
 	public RemoteDevice(SharedPreferences options) {
 		this.options = options;
 	}
+
+	public void reEnable() {
+	}
 }

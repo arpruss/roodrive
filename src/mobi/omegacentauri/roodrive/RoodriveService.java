@@ -195,6 +195,7 @@ public class RoodriveService extends Service  {
 			@Override
 			public void onClick(View v) {
 				vacuum = ! vacuum;
+				roomba.reEnable();
 				roomba.command(Roomba.VACUUM, vacuum ? 1 : 0);
 			}
 		});
@@ -302,6 +303,8 @@ public class RoodriveService extends Service  {
 	}
 	
 	protected void joystickMove(MotionEvent motion) {
+		roomba.reEnable();
+		
 		Log.v("Roodrive", "joystickMove "+motion);
 		if (motion.getAction() == MotionEvent.ACTION_DOWN) {
 			curX = moveStartX = motion.getX();

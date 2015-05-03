@@ -9,11 +9,11 @@ public class Roomba extends RemoteDevice {
 	public static final int VACUUM = 0;
 	float STRIP_HALF_WIDTH = 0.1f;
 	DataLink link;
-	
+
 	public Roomba(SharedPreferences options) {
 		super(options);
 	}
-	
+
 	/* can only be called after connection is established */
 	public void setOnDisconnectListener(DataLink.OnDisconnectListener listener) {
 		if (link != null)
@@ -32,10 +32,18 @@ public class Roomba extends RemoteDevice {
 			rotate(x);
 		}
 		else {
-			driveAndRotate(y, x);
+			driveAndRotate(removeStrip(y), removeStrip(x));
 		}
 	}
-	
+
+	private float removeStrip(float x) {
+		if (Math.abs(x) <= STRIP_HALF_WIDTH)
+			return 0f;
+		boolean neg = (x < 0f);
+		x = (Math.abs(x)-STRIP_HALF_WIDTH) / (1-STRIP_HALF_WIDTH);
+		return neg ? -x : x;
+	}
+
 	private void driveAndRotate(float drive, float rotate) {
 		Log.v("Roodrive", "drive and rotate"+drive+" "+rotate);
 
@@ -43,14 +51,15 @@ public class Roomba extends RemoteDevice {
 		if (outerWheelVelocity > 500.)
 			outerWheelVelocity = 500.;
 		double innerWheelVelocity = (1 - 2 * Math.abs(rotate)) * outerWheelVelocity;
-		
+
 		if (drive < 0) {
 			innerWheelVelocity = -innerWheelVelocity;
+			outerWheelVelocity = -outerWheelVelocity;
 		}
-		
+
 		int left;
 		int right;
-		
+
 		if (rotate < 0) {
 			left = (int)innerWheelVelocity;
 			right = (int)outerWheelVelocity;
@@ -59,10 +68,10 @@ public class Roomba extends RemoteDevice {
 			left = (int)outerWheelVelocity;
 			right = (int)innerWheelVelocity;
 		}
-		
+
 		Log.v("Roodrive", "left = "+left+" right = "+right);
-		
-		link.transmit(145, right >> 8, right & 0xFF, left >> 8, right & 0xFF);
+
+		link.transmit(145, 0xFF&(right >> 8), right & 0xFF, 0xFF&(left >> 8), left & 0xFF);
 	}
 
 	private void drive(float y) {
@@ -95,32 +104,37 @@ public class Roomba extends RemoteDevice {
 	}
 
 	@Override
+	public void reEnable() {
+		link.transmit(128, 130);
+	}
+	
+	@Override
 	public boolean connect() {
 		Log.v("Roodrive", "connect to Roomba");
-		
+
 		try {
 			link = new BTDataLink(options.getString(RemoteDevice.PREF_BT_ADDRESS, "(none)"));
 			link.transmit(128, 130);
-                        try {
-			    Thread.sleep(50);
-                        } catch(Exception e2){}
+			try {
+				Thread.sleep(50);
+			} catch(Exception e2){}
 			link.transmit(139, 0, 128, 255);
 			return true;
 		}
 		catch (Exception e) {
 			if (link != null) {
-                            link.transmit(133);
-			     link.stop();
+				link.transmit(133);
+				link.stop();
 			}
 			return false;
 		}
-		
+
 	}
 
 	@Override
 	public void disconnect() {
 		Log.v("Roodrive", "disconnect from Roomba");		
-		
+
 		if (link != null) {
 			link.setOnDisconnectListener(null);
 			link.transmit(133);
@@ -132,9 +146,9 @@ public class Roomba extends RemoteDevice {
 	@Override
 	public void command(int... data) {
 		// TODO Auto-generated method stub
-		
+
 		Log.v("Roodrive", "command "+data[0]);
-		
+
 		if (data[0] == VACUUM) {
 			if (data[1] == 0) {
 				link.transmit(138, 0);
